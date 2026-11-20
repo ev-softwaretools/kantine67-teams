@@ -82,8 +82,10 @@ def git(*args: str) -> str:
 
 def commit_and_push(paths: list[Path], message: str) -> str:
     git("add", *[str(p.relative_to(ROOT)) for p in paths])
-    git("commit", "-m", message)
-    git("push")
+    # A retry after a failed Teams post finds the image already committed
+    if git("status", "--porcelain"):
+        git("commit", "-m", message)
+        git("push")
     return git("rev-parse", "HEAD")
 
 
@@ -136,6 +138,9 @@ def post_to_teams(title: str, image_url: str) -> None:
 
 
 def main() -> int:
+    if not DRY_RUN and not os.environ.get("TEAMS_WEBHOOK_URL"):
+        print("Secret TEAMS_WEBHOOK_URL is not set")
+        return 1
     page = http_get(PAGE_URL).decode("utf-8", errors="replace")
     url = find_menu_image_url(page)
     if not url:
