@@ -1,0 +1,35 @@
+name: Kantine67 menu to Teams
+
+on:
+  schedule:
+    # Every hour from 05:17 to 19:17 UTC (06:17–20:17 Vienna in winter), every day
+    - cron: "17 5-19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kantine-menu
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pillow==11.1.0
+
+      - name: Check menu and post if changed
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python scripts/check_menu.py
